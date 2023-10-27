@@ -45,30 +45,23 @@ export const getProducts = async (
     }
 
     if (req.query.attrts) {
-      // attrs=RAM-1TB-2TB-4TB,color-blue-red
-      // [ 'RAM-1TB-4TB', 'color-blue', '' ]
-      //@ts-ignore
-      attrsQueryCondition = req.query.attrts.split(",").reduce((acc:any, item:any) => {
-        if (item) {
-          let a = item.split("-");
-          let values = [...a];
-          values.shift(); // removes first item
-          let a1 = {
-            attrts: { $elemMatch: { key: a[0], value: { $in: values } } },
-          };
-          acc.push(a1);
-    
-          return acc;
-        } else return acc;
-      }, []);
+      attrsQueryCondition = req.query.attrts
+        //@ts-ignore
+        .split(",")
+        .reduce((acc: any, item: any) => {
+          if (item) {
+            let a = item.split("-");
+            let values = [...a];
+            values.shift(); // removes first item
+            let a1 = {
+              attrts: { $elemMatch: { key: a[0], value: { $in: values } } },
+            };
+            acc.push(a1);
+            return acc;
+          } else return acc;
+        }, []);
 
       queryCondtion = true;
-    }
-
-    if (queryCondtion) {
-      query = {
-        $and: [priceQueryCondtion, ratingQueryCondtion, categoryQueryCondition,...attrsQueryCondition],
-      };
     }
 
     // pagination
@@ -83,8 +76,33 @@ export const getProducts = async (
       sort = { [sortOpt[0]]: Number(sortOpt[1]) };
     }
 
+    const searchQuery = req.params.searchQuery || "";
+    let searchQueryCondtion = {};
+    let select = {};
+    if (searchQuery) {
+      queryCondtion = true;
+      searchQueryCondtion = { $text: { $search: searchQuery } };
+      select = {
+        score: { $meta: "textScore" },
+      };
+      sort = { score: { $meta: "textScore" } };
+    }
+
+    if (queryCondtion) {
+      query = {
+        $and: [
+          priceQueryCondtion,
+          ratingQueryCondtion,
+          categoryQueryCondition,
+          searchQueryCondtion,
+          ...attrsQueryCondition,
+        ],
+      };
+    }
+
     const totalProducts = await ProductModel.countDocuments(query);
     const products = await ProductModel.find(query)
+      .select(select)
       .skip(recordsPerPage * (pageNumber - 1))
       .sort(sort)
       .limit(recordsPerPage);

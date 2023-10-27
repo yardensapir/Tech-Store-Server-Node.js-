@@ -5,6 +5,8 @@ const router = express.Router();
 
 router.get("/api/products", productController.getProducts);
 router.get("/api/products/category/:categoryName", productController.getProducts);
+router.get("/api/products/category/:categoryName/search/:searchQuery", productController.getProducts);
+router.get("/api/products/search/:searchQuery", productController.getProducts);
 router.get("/api/products/:id", productController.getProductById);
 
 
