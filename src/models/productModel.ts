@@ -53,4 +53,4 @@ const ProductModel = mongoose.model("Product", productSchema);
 
 export default ProductModel;
 
-// reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: Review }],
+
