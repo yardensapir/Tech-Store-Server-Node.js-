@@ -4,8 +4,27 @@ import User from "../models/userModel";
 import { Type_User } from "../types/types";
 import generateToken from "../utils/generateToken";
 
+// Auth User
+export const authUser = asyncHandler(async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  const user: Type_User | null = await User.findOne({ email });
+  if (user && (await user.matchPassword(password))) {
+    generateToken(res, user._id);
+    res.status(200).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      isAdmin: user.isAdmin,
+    });
+  } else {
+    res.status(401);
+    throw new Error("Invalid email or password");
+  }
+});
+
 // Register User
-export const registerUser = async (req: Request, res: Response) => {
+export const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
   const userExists = await User.findOne({ email });
@@ -34,27 +53,7 @@ export const registerUser = async (req: Request, res: Response) => {
     res.status(400);
     throw new Error("Invalid user data");
   }
-};
-
-// Auth User
-export const authUser = asyncHandler(async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-
-  const user: Type_User | null = await User.findOne({ email });
-  if (user && (await user.matchPassword(password))) {
-    generateToken(res, user._id);
-    res.status(200).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      isAdmin: user.isAdmin,
-    });
-  } else {
-    res.status(401);
-    throw new Error("Invalid email or password");
-  }
 });
-
 // Logout User
 export const logoutUser = async (req: Request, res: Response) => {
   res.cookie("jwt", "", {
@@ -65,45 +64,50 @@ export const logoutUser = async (req: Request, res: Response) => {
 };
 
 // Get User Profile
-export const getUserProfile = async (req: Request, res: Response) => {
-  const user = await User.findById(req.user._id);
-  if (user) {
-    res.status(200).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      isAdmin: user.isAdmin,
-    });
-  } else {
-    res.status(404);
-    throw new Error("User not found");
-  }
-};
-// Update User Profile
-export const updateUserProfile = async (req: Request, res: Response) => {
-  const user = await User.findById(req.user._id);
-
-  if (user) {
-    user.name = req.body.name || user.name;
-    user.email = req.body.email || user.email;
-    console.log(req.body.name);
-
-    if (req.body.password) {
-      user.password = req.body.password;
+export const getUserProfile = asyncHandler(
+  async (req: Request, res: Response) => {
+    const user = await User.findById(req.user._id);
+    if (user) {
+      res.status(200).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      });
+    } else {
+      res.status(404);
+      throw new Error("User not found");
     }
-    const updatedUser = await user.save();
-
-    res.status(200).json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      isAdmin: updatedUser.isAdmin,
-    });
-  } else {
-    res.status(404);
-    throw new Error("User not found");
   }
-};
+);
+// Update User Profile
+export const updateUserProfile = asyncHandler(
+  async (req: Request, res: Response) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+      user.name = req.body.name || user.name;
+      user.email = req.body.email || user.email;
+      console.log(req.body.name);
+
+      if (req.body.password) {
+        user.password = req.body.password;
+      }
+      const updatedUser = await user.save();
+
+      res.status(200).json({
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        isAdmin: updatedUser.isAdmin,
+      });
+    } else {
+      res.status(404);
+      throw new Error("User not found");
+    }
+  }
+);
+
 // Get All Users
 export const getUsers = async (req: Request, res: Response) => {
   res.send("All Users");
